@@ -2,10 +2,11 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"github.com/BurntSushi/toml"
+	"github.com/holgerfy/go-pkg/log"
 	jsoniter "github.com/json-iterator/go"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -50,7 +51,8 @@ func (conf *Config) walk(path string, info os.FileInfo, err error) error {
 			var config map[string]interface{}
 			_, err = toml.DecodeFile(path, &config)
 			if err != nil {
-				log.Fatal(err)
+				fmt.Println("aaf: ", path, err)
+				log.Logger().Fatal(nil, err)
 			}
 			conf.copy(strings.TrimSuffix(info.Name(), ".toml"), config)
 		} else {
@@ -69,7 +71,7 @@ func (conf *Config) load(path []string) *Config {
 				continue
 			}
 			for _, fi := range rd {
-				conf.walk(dir+fi.Name(), fi, nil)
+				conf.walk(dir+"/"+fi.Name(), fi, nil)
 			}
 		}
 	})

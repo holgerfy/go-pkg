@@ -62,7 +62,8 @@ type (
 
 // Start mongo
 func Start() {
-	logger := log.WithCtx(log.WithFields(context.Background(), map[string]string{"action": "startMongo"}))
+	ctx := log.WithFields(context.Background(), map[string]string{"action": "startMongo"})
+	log.Logger().Info(ctx, "test ")
 	var err error
 	err = config.GetInstance().Bind("db", "mongo", &conf)
 	if err == config.ErrNodeNotExists {
@@ -80,7 +81,7 @@ func Start() {
 		certs := x509.NewCertPool()
 		fmt.Println(funcs.GetRoot() + conf.CaCert)
 		if pemData, err := ioutil.ReadFile(funcs.GetRoot() + conf.CaCert); err != nil {
-			logger.Error("failed to read cert, err: " + err.Error())
+			log.Logger().Info(ctx, "failed to read cert, err: ", err)
 			return
 		} else {
 			certs.AppendCertsFromPEM(pemData)
@@ -100,13 +101,14 @@ func Start() {
 
 	client, err = mongo.NewClient(mongoOptions.ApplyURI(conf.URL))
 	if err != nil {
-		logger.Error("self build new client, err: " + err.Error())
+		log.Logger().Info(ctx, "self build new client, err: ", err)
+		return
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	err = client.Connect(ctx)
+	mgoCtx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	err = client.Connect(mgoCtx)
 	if err != nil {
-		logger.Error("failed to connect, err: " + err.Error())
+		log.Logger().Error(ctx, "failed to connect, err: ", err)
 	}
 }
 
