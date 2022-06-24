@@ -97,6 +97,18 @@ func (conf *Config) Bind(node, key string, obj interface{}) error {
 	return conf.assignment(objVal, obj)
 }
 
+func (conf *Config) GetChildConf(node, key, subKey string) (interface{}, error) {
+	var confInfo map[string]interface{}
+	if err := conf.Bind(node, key, &confInfo); err != nil {
+		return nil, err
+	}
+	val, ok := confInfo[subKey]
+	if !ok {
+		return nil, ErrNodeNotExists
+	}
+	return val, nil
+}
+
 func (conf *Config) assignment(val, obj interface{}) error {
 	data, _ := json.Marshal(val)
 	return json.Unmarshal(data, obj)
