@@ -4,11 +4,16 @@ import (
 	"context"
 	"fmt"
 	"github.com/holgerfy/go-pkg/funcs"
+	"github.com/holgerfy/go-pkg/unique"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 	"io"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -37,6 +42,7 @@ func Start() {
 
 func getWriter() io.Writer {
 	logDir := funcs.GetRoot()
+	fmt.Println(logDir + "/%Y%m%d.log")
 	logWriter, _ := rotatelogs.New(logDir+"/%Y%m%d.log",
 		rotatelogs.WithMaxAge(time.Hour*24*7),
 		rotatelogs.WithRotationTime(time.Hour*24),
@@ -67,7 +73,9 @@ func WithCtx(ctx context.Context) *zap.Logger {
 	if ctx == nil {
 		return log.logger
 	}
+	fmt.Println("csdfsf----", ctx)
 	if ctxLogger, ok := ctx.Value(loggerKey).(*zap.Logger); ok {
+		fmt.Println("sdfs-has:  ", ctxLogger)
 		return ctxLogger
 	}
 	return log.logger
@@ -91,4 +99,41 @@ func (l *Log) Warn(ctx context.Context, args ...interface{}) {
 
 func (l *Log) Fatal(ctx context.Context, args ...interface{}) {
 	WithCtx(ctx).Fatal(fmt.Sprint(args))
+}
+
+func GrpcUnaryServerInterceptor(l *zap.Logger) grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+		startTime := time.Now()
+		reqId := ""
+		headers, ok := metadata.FromIncomingContext(ctx)
+		if ok {
+			reqIdArr := headers.Get("Req-Id")
+			if len(reqIdArr) > 0 {
+				reqId = reqIdArr[0]
+			}
+		}
+		if reqId == "" {
+			reqId = unique.Uuid()
+		}
+		items := map[string]string{
+			"method": info.FullMethod,
+			"req-id": reqId,
+		}
+		newCtx := WithFields(ctx, items)
+		resp, err = handler(newCtx, req)
+		code := status.Code(err)
+		duration := time.Since(startTime)
+
+		items1 := map[string]string{
+			"code":     strconv.Itoa(int(code)),
+			"duration": duration.String(),
+		}
+		fields := make([]zap.Field, 0)
+		for k, v := range items1 {
+			f := zap.String(k, v)
+			fields = append(fields, f)
+		}
+		WithCtx(newCtx).Info("serverLogger", fields...)
+		return resp, err
+	}
 }
