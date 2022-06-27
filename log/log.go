@@ -101,7 +101,7 @@ func (l *Log) Fatal(ctx context.Context, args ...interface{}) {
 	WithCtx(ctx).Fatal(fmt.Sprint(args))
 }
 
-func GrpcUnaryServerInterceptor(l *zap.Logger) grpc.UnaryServerInterceptor {
+func GrpcUnaryServerInterceptor(l *Log) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		startTime := time.Now()
 		reqId := ""
