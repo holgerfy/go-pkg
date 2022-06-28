@@ -46,7 +46,6 @@ func Start() {
 
 func getWriter() io.Writer {
 	logDir := funcs.GetRoot()
-	fmt.Println(logDir + "/%Y%m%d.log")
 	logWriter, _ := rotatelogs.New(logDir+"/%Y%m%d.log",
 		rotatelogs.WithMaxAge(time.Hour*24*7),
 		rotatelogs.WithRotationTime(time.Hour*24),
@@ -65,7 +64,6 @@ func WithFields(ctx context.Context, fields map[string]string) context.Context {
 		fieldArr = append(fieldArr, f)
 	}
 	l := WithCtx(ctx)
-	fmt.Println(l)
 	return context.WithValue(ctx, loggerKey, l.With(fieldArr...))
 }
 
@@ -77,9 +75,7 @@ func WithCtx(ctx context.Context) *zap.Logger {
 	if ctx == nil {
 		return log.logger
 	}
-	fmt.Println("csdfsf----", ctx)
 	if ctxLogger, ok := ctx.Value(loggerKey).(*zap.Logger); ok {
-		fmt.Println("sdfs-has:  ", ctxLogger)
 		return ctxLogger
 	}
 	return log.logger

@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
-	"fmt"
 	"github.com/holgerfy/go-pkg/app"
 	"github.com/holgerfy/go-pkg/config"
 	"github.com/holgerfy/go-pkg/funcs"
@@ -79,7 +78,6 @@ func Start() {
 	}
 	if conf.IsSsl {
 		certs := x509.NewCertPool()
-		fmt.Println(funcs.GetRoot() + conf.CaCert)
 		if pemData, err := ioutil.ReadFile(funcs.GetRoot() + conf.CaCert); err != nil {
 			log.Logger().Info(ctx, "failed to read cert, err: ", err)
 			return
@@ -473,7 +471,9 @@ func (collection *CollectionInfo) LBS(pipeline interface{}, documents interface{
 	defer cancel()
 	opts := options.Aggregate()
 	result, err := collection.Collection.Aggregate(ctx, pipeline, opts)
-	fmt.Println(pipeline, err)
+	if err != nil {
+		return err
+	}
 	defer result.Close(ctx)
 	val := reflect.ValueOf(documents)
 	if val.Kind() != reflect.Ptr || val.Elem().Kind() != reflect.Slice {

@@ -26,5 +26,4 @@ func TestStart(t *testing.T) {
 		fmt.Println("lock failed")
 	}
 	redis.Client.Set("test", "wew", time.Second*4)
-	fmt.Println(redis.Client.Get("test").Result())
 }
