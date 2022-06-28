@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc/status"
 	"io"
 	"os"
+	"runtime"
 	"strconv"
 	"time"
 )
@@ -30,6 +31,9 @@ func Start() {
 	encoderConfig := zap.NewProductionEncoderConfig()
 	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 	encoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	encoderConfig.MessageKey = "msg"
+	encoderConfig.TimeKey = "ts"
+	encoderConfig.LevelKey = "level"
 	encoder := zapcore.NewConsoleEncoder(encoderConfig)
 
 	core := zapcore.NewCore(
@@ -37,7 +41,7 @@ func Start() {
 		zapcore.NewMultiWriteSyncer(zapcore.AddSync(os.Stdout), zapcore.AddSync(getWriter())),
 		level,
 	)
-	log.logger = zap.New(core, zap.AddCaller(), zap.AddStacktrace(zap.ErrorLevel))
+	log.logger = zap.New(core, zap.AddStacktrace(zap.ErrorLevel))
 }
 
 func getWriter() io.Writer {
@@ -82,23 +86,33 @@ func WithCtx(ctx context.Context) *zap.Logger {
 }
 
 func (l *Log) Info(ctx context.Context, args ...interface{}) {
-	WithCtx(ctx).Info(fmt.Sprint(args))
+	pc, file, line, _ := runtime.Caller(1)
+	f := runtime.FuncForPC(pc)
+	WithCtx(ctx).Info(fmt.Sprint(args), zap.String("file", file), zap.String("line", string(line)), zap.String("func", f.Name()))
 }
 
 func (l *Log) Error(ctx context.Context, args ...interface{}) {
-	WithCtx(ctx).Error(fmt.Sprint(args))
+	pc, file, line, _ := runtime.Caller(1)
+	f := runtime.FuncForPC(pc)
+	WithCtx(ctx).Error(fmt.Sprint(args), zap.String("file", file), zap.String("line", string(line)), zap.String("func", f.Name()))
 }
 
 func (l *Log) Debug(ctx context.Context, args ...interface{}) {
-	WithCtx(ctx).Debug(fmt.Sprint(args))
+	pc, file, line, _ := runtime.Caller(1)
+	f := runtime.FuncForPC(pc)
+	WithCtx(ctx).Debug(fmt.Sprint(args), zap.String("file", file), zap.String("line", string(line)), zap.String("func", f.Name()))
 }
 
 func (l *Log) Warn(ctx context.Context, args ...interface{}) {
-	WithCtx(ctx).Error(fmt.Sprint(args))
+	pc, file, line, _ := runtime.Caller(1)
+	f := runtime.FuncForPC(pc)
+	WithCtx(ctx).Warn(fmt.Sprint(args), zap.String("file", file), zap.String("line", string(line)), zap.String("func", f.Name()))
 }
 
 func (l *Log) Fatal(ctx context.Context, args ...interface{}) {
-	WithCtx(ctx).Fatal(fmt.Sprint(args))
+	pc, file, line, _ := runtime.Caller(1)
+	f := runtime.FuncForPC(pc)
+	WithCtx(ctx).Fatal(fmt.Sprint(args), zap.String("file", file), zap.String("line", string(line)), zap.String("func", f.Name()))
 }
 
 func GrpcUnaryServerInterceptor(l *Log) grpc.UnaryServerInterceptor {
