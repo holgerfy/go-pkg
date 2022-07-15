@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
+	"fmt"
 	"github.com/holgerfy/go-pkg/app"
 	"github.com/holgerfy/go-pkg/config"
 	"github.com/holgerfy/go-pkg/funcs"
@@ -15,7 +16,8 @@ import (
 	"strings"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
+	//"go.mongodb.org/mongo-driver/bson"
+	"github.com/globalsign/mgo/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -270,6 +272,20 @@ func (collection *CollectionInfo) UpdateOne(document interface{}) (*mongo.Update
 	return collection.Collection.UpdateOne(ctx, collection.filter, bson.M{"$set": BeforeUpdate(document)})
 }
 
+func (collection CollectionInfo) DeleteField(field string) (*mongo.UpdateResult, error) {
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	return collection.Collection.UpdateOne(ctx, collection.filter, bson.M{"$unset": bson.M{field: 1}})
+}
+
+func (collection CollectionInfo) DeleteFields(fields []string) (*mongo.UpdateResult, error) {
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	uData := make(bson.M)
+	for _, field := range fields {
+		uData[field] = 1
+	}
+	return collection.Collection.UpdateMany(ctx, collection.filter, bson.M{"$unset": uData})
+}
+
 func (collection CollectionInfo) UpByID(id interface{}, document interface{}) (*mongo.UpdateResult, error) {
 	return collection.Where(bson.M{"_id": id}).UpdateOne(document)
 }
@@ -287,7 +303,6 @@ func (collection *CollectionInfo) UpsertMany(document interface{}) (*mongo.Updat
 	return collection.Collection.UpdateMany(ctx, collection.filter, bson.M{"$set": BeforeUpdate(document)}, &opt)
 }
 
-// FindOne
 func (collection *CollectionInfo) FindOne(document interface{}) error {
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	result := collection.Collection.FindOne(ctx, collection.filter, &options.FindOneOptions{
@@ -302,7 +317,6 @@ func (collection *CollectionInfo) FindByID(id interface{}, document interface{})
 	return collection.Where(bson.M{"_id": id}).FindOne(document)
 }
 
-// FindMany
 func (collection *CollectionInfo) FindMany(documents interface{}) error {
 	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
 	opt := options.Find().SetProjection(collection.fields).SetLimit(collection.limit).SetSort(collection.sort)
@@ -321,10 +335,12 @@ func (collection *CollectionInfo) FindMany(documents interface{}) error {
 	itemTyp := val.Elem().Type().Elem()
 	for result.Next(ctx) {
 		item := reflect.New(itemTyp)
+
 		err := result.Decode(item.Interface())
 		if err != nil {
 			return err
 		}
+		fmt.Println(reflect.Indirect(item))
 		slice = reflect.Append(slice, reflect.Indirect(item))
 	}
 	if ctxErr := ctx.Err(); ctxErr != nil {

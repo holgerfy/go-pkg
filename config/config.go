@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"github.com/BurntSushi/toml"
 	"github.com/holgerfy/go-pkg/log"
 	jsoniter "github.com/json-iterator/go"
@@ -22,6 +23,7 @@ var (
 )
 
 func LoadConfig(path []string) {
+	fmt.Println(path)
 	config = new(Config).load(path)
 }
 
@@ -48,10 +50,11 @@ func (conf *Config) load(path []string) *Config {
 			}
 			for _, fi := range rd {
 				if !fi.IsDir() {
-					if strings.HasSuffix(dir+fi.Name(), ".toml") {
+					file := dir + "/" + fi.Name()
+					if strings.HasSuffix(file, ".toml") {
 						var config map[string]interface{}
-						if _, err = toml.DecodeFile(dir+fi.Name(), &config); err != nil {
-							log.Logger().Fatal(nil, "failed to load config")
+						if _, err = toml.DecodeFile(file, &config); err != nil {
+							log.Logger().Fatal(nil, "failed to load config", dir+fi.Name())
 						}
 						conf.copy(strings.TrimSuffix(fi.Name(), ".toml"), config)
 					}

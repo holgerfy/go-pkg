@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"hash/crc32"
 	"io/ioutil"
 	"math/rand"
 	"net"
@@ -22,6 +23,14 @@ import (
 	"strings"
 	"time"
 )
+
+func GetEnvVal(key string) string {
+	return os.Getenv(key)
+}
+
+func Crc32(str string) uint32 {
+	return crc32.ChecksumIEEE([]byte(str))
+}
 
 //if version1 > version2 return 1; if version1 < version2 return -1; other: 0。
 func CompareVersion(version1 string, version2 string) int {
